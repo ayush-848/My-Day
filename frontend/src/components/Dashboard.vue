@@ -97,10 +97,8 @@ const fetchDashboardData = async () => {
     const res = await axios.get(`${API_BASE_URL}/api/dashboard`, { withCredentials: true })
     posts.value = res.data.posts
     user.value = res.data.user
-    console.log('[Dashboard] Posts loaded:', posts.value)
   } catch (err) {
-    console.error('[Dashboard] Error fetching data:', err)
-    router.push('/admin/login')
+    router.push('/admin')
   }
 }
 

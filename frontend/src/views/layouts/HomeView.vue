@@ -8,8 +8,10 @@ const posts = ref([]);
 const nextPage = ref(null);
 const username = ref(null);
 const userExists = ref(false);
+const loading = ref(true); // ✅ Loading flag
 
 const fetchPosts = async (page = 1) => {
+  loading.value = true; // ✅ Start loading
   try {
     const response = await axios.get(`${API_BASE_URL}/api/posts?page=${page}`, {
       withCredentials: true,
@@ -22,6 +24,8 @@ const fetchPosts = async (page = 1) => {
   } catch (error) {
     console.error('Failed to fetch posts:', error);
     alert('Failed to fetch posts. Please check the backend connection.');
+  } finally {
+    loading.value = false; // ✅ Done loading
   }
 };
 
@@ -37,6 +41,7 @@ const formatDate = (dateString) => {
 
 <template>
   <div class="container">
+    <!-- Welcome Section -->
     <div class="author">
       <h1 class="author_heading">
         <template v-if="username">
@@ -53,12 +58,19 @@ const formatDate = (dateString) => {
       <img src="/images/hero-image.webp" alt="person looking out of the window" class="hero_image" width="600" height="300">
     </div>
 
+    <!-- Posts Section -->
     <section class="articles">
       <h2 class="articles_heading">
         {{ userExists ? 'Your Posts:' : 'Latest Posts:' }}
       </h2>
 
-      <div v-if="posts.length > 0" class="post-list">
+      <!-- ✅ Show loading message -->
+      <div v-if="loading">
+        <p>Loading your posts...</p>
+      </div>
+
+      <!-- ✅ Posts list after loading -->
+      <div v-else-if="posts.length > 0" class="post-list">
         <ul class="article-ul">
           <li v-for="post in posts" :key="post._id">
             <router-link :to="`/post/${post._id}`">
@@ -68,16 +80,18 @@ const formatDate = (dateString) => {
           </li>
         </ul>
       </div>
+
+      <!-- ✅ No posts found -->
       <div v-else>
         <p>No posts found.</p>
       </div>
 
-      <div v-if="nextPage" class="pagination-controls">
-  <a href="#" @click.prevent="fetchPosts(nextPage)" class="pagination">
-    View Older Posts →
-  </a>
-</div>
-
+      <!-- Pagination -->
+      <div v-if="nextPage && !loading" class="pagination-controls">
+        <a href="#" @click.prevent="fetchPosts(nextPage)" class="pagination">
+          View Older Posts →
+        </a>
+      </div>
     </section>
   </div>
 </template>
