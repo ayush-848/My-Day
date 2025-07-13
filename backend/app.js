@@ -23,6 +23,9 @@ app.use(express.static('public'));
 
 app.use('/api', require('./server/routes/api'));
 app.use('/auth', require('./server/routes/auth'));
+app.get('/', (req, res) => {
+  res.send('Welcome to the MyDay API'); 
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
