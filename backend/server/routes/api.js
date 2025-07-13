@@ -75,22 +75,68 @@ const authMiddleware = async (req, res, next) => {
 
 // ==================== Public API Routes ====================
 
-router.get('/posts', attachUserForApi, async (req, res) => {
+// server/routes/api.js
+router.get('/posts', async (req, res) => {
+  const token = req.cookies.token;
+  let userId = null;
+  let username = null;
+  let userExists = false;
+
+  // Check if logged in
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, jwtSecret);
+      const user = await User.findById(decoded.userId);
+      if (user) {
+        userId = user._id;
+        username = user.username;
+        userExists = true;
+      }
+    } catch (error) {
+      console.error('[API /posts] Invalid token');
+    }
+  }
+
+  // If not logged in, fallback to demo user
+  if (!userExists) {
+    try {
+      const demoUser = await User.findOne({ username: 'demoID' });
+      if (demoUser) {
+        userId = demoUser._id;
+        username = null; // No greeting for guest
+      } else {
+        return res.status(500).json({ type: 'error', message: 'Demo user not found' });
+      }
+    } catch (err) {
+      return res.status(500).json({ type: 'error', message: 'Error fetching demo user' });
+    }
+  }
+
   try {
     const perPage = 10;
     const page = parseInt(req.query.page) || 1;
-    let query = req.userExists && req.userId ? { user: req.userId } : demoUserId ? { user: demoUserId } : {};
 
-    const posts = await Post.find(query).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage);
+    const query = { user: userId };
+    const posts = await Post.find(query)
+      .sort({ createdAt: -1 })
+      .skip(perPage * (page - 1))
+      .limit(perPage);
+
     const count = await Post.countDocuments(query);
     const hasNextPage = page + 1 <= Math.ceil(count / perPage);
 
-    res.json({ posts, nextPage: hasNextPage ? page + 1 : null, username: req.username, userExists: req.userExists });
+    res.json({
+      posts,
+      nextPage: hasNextPage ? page + 1 : null,
+      username,
+      userExists,
+    });
   } catch (error) {
-    console.error('Posts error:', error);
+    console.error('[API /posts] Post fetch error:', error);
     res.status(500).json({ type: 'error', message: 'Could not fetch posts' });
   }
 });
+
 
 router.get('/post/:id', async (req, res) => {
   try {
