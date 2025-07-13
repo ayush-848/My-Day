@@ -41,7 +41,7 @@ onMounted(fetchPost)
     </div>
 
     <div v-else class="loading">
-      <p>Loading post or post not found...</p>
+      <p>Loading post ...</p>
     </div>
   </div>
 </template>
