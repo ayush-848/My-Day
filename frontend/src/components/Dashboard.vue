@@ -11,8 +11,13 @@
       <router-link to="/add-post" class="button">+ Add New</router-link>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="loading">
+      <p>Loading posts...</p>
+    </div>
+
     <!-- Posts List -->
-    <ul class="admin_posts">
+    <ul v-else class="admin_posts">
       <li v-for="post in posts" :key="post._id">
         <router-link :to="`/post/${post._id}`">{{ post.title }} ↗</router-link>
         <div class="admin_post_controls">
@@ -84,9 +89,9 @@ const changelog = ref({
 const newsletterContent = ref('')
 const showModal = ref(false)
 const postToDelete = ref(null)
+const loading = ref(true) // ✅ loading state
 
 const token = localStorage.getItem('token') || ''
-
 const authHeaders = {
   headers: {
     Authorization: `Bearer ${token}`
@@ -101,12 +106,15 @@ const showStatusMessage = (type, text) => {
 }
 
 const fetchDashboardData = async () => {
+  loading.value = true // ✅ Start loading
   try {
     const res = await axios.get(`${API_BASE_URL}/api/dashboard`, authHeaders)
     posts.value = res.data.posts
     user.value = res.data.user
   } catch (err) {
     router.push('/admin')
+  } finally {
+    loading.value = false // ✅ End loading
   }
 }
 
@@ -133,24 +141,20 @@ const submitNewsletter = async () => {
 }
 
 const showDeleteModal = (postId) => {
-  console.log('[Dashboard] Show delete modal for post ID:', postId)
   postToDelete.value = postId
   showModal.value = true
 }
 
 const hideDeleteModal = () => {
-  console.log('[Dashboard] Hide delete modal')
   showModal.value = false
   postToDelete.value = null
 }
 
 const confirmDeletePost = async () => {
-  console.log('[Dashboard] Deleting post with ID:', postToDelete.value)
   try {
     const res = await axios.delete(`${API_BASE_URL}/api/delete-post/${postToDelete.value}`, authHeaders)
     posts.value = posts.value.filter(p => p._id !== postToDelete.value)
     hideDeleteModal()
-    console.log('[Dashboard] Post deleted successfully')
     showStatusMessage(res.data.type, res.data.message)
   } catch (err) {
     console.error('[Dashboard] Delete post error:', err)
@@ -160,8 +164,6 @@ const confirmDeletePost = async () => {
 
 onMounted(fetchDashboardData)
 </script>
-
-
 
 <style scoped>
 .modal {
