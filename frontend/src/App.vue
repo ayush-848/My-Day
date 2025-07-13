@@ -13,9 +13,10 @@ const userExists = ref(false)
 
 const checkAuthStatus = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/auth/auth-status', {
-      withCredentials: true
-    })
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/auth-status`, {
+  withCredentials: true
+})
+
     loggedInUsername.value = response.data.username || null
     userExists.value = response.data.userExists || false
   } catch (error) {
@@ -31,7 +32,7 @@ onMounted(() => {
 
 const logout = async () => {
   try {
-    await axios.post('http://localhost:5000/auth/logout', {}, {
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {}, {
       withCredentials: true
     })
 
