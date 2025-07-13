@@ -12,10 +12,20 @@ const loggedInUsername = ref(null)
 const userExists = ref(false)
 
 const checkAuthStatus = async () => {
+  const token = localStorage.getItem('token')
+
+  if (!token) {
+    loggedInUsername.value = null
+    userExists.value = false
+    return
+  }
+
   try {
     const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/auth-status`, {
-  withCredentials: true
-})
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
 
     loggedInUsername.value = response.data.username || null
     userExists.value = response.data.userExists || false
@@ -32,10 +42,6 @@ onMounted(() => {
 
 const logout = async () => {
   try {
-    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {}, {
-      withCredentials: true
-    })
-
     localStorage.removeItem('token')
     localStorage.removeItem('username')
     loggedInUsername.value = null
@@ -47,6 +53,7 @@ const logout = async () => {
     alert('Logout failed. Please try again.')
   }
 }
+
 const hideHeaderFooter = computed(() => route.path === '/admin')
 </script>
 

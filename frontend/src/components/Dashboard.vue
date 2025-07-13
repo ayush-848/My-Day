@@ -85,6 +85,14 @@ const newsletterContent = ref('')
 const showModal = ref(false)
 const postToDelete = ref(null)
 
+const token = localStorage.getItem('token') || ''
+
+const authHeaders = {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+}
+
 const showStatusMessage = (type, text) => {
   statusMessage.value = { type, text }
   setTimeout(() => {
@@ -94,7 +102,7 @@ const showStatusMessage = (type, text) => {
 
 const fetchDashboardData = async () => {
   try {
-    const res = await axios.get(`${API_BASE_URL}/api/dashboard`, { withCredentials: true })
+    const res = await axios.get(`${API_BASE_URL}/api/dashboard`, authHeaders)
     posts.value = res.data.posts
     user.value = res.data.user
   } catch (err) {
@@ -104,7 +112,7 @@ const fetchDashboardData = async () => {
 
 const submitChangelog = async () => {
   try {
-    const res = await axios.post(`${API_BASE_URL}/api/add-changelog`, changelog.value, { withCredentials: true })
+    const res = await axios.post(`${API_BASE_URL}/api/add-changelog`, changelog.value, authHeaders)
     showStatusMessage(res.data.type, res.data.message)
     changelog.value = { versionNumber: '', updatedOn: '', featureDetails: '' }
   } catch (err) {
@@ -115,7 +123,7 @@ const submitChangelog = async () => {
 
 const submitNewsletter = async () => {
   try {
-    const res = await axios.post(`${API_BASE_URL}/api/send-newsletter`, { newsletterContent: newsletterContent.value }, { withCredentials: true })
+    const res = await axios.post(`${API_BASE_URL}/api/send-newsletter`, { newsletterContent: newsletterContent.value }, authHeaders)
     showStatusMessage(res.data.type, res.data.message)
     newsletterContent.value = ''
   } catch (err) {
@@ -139,7 +147,7 @@ const hideDeleteModal = () => {
 const confirmDeletePost = async () => {
   console.log('[Dashboard] Deleting post with ID:', postToDelete.value)
   try {
-    const res = await axios.delete(`${API_BASE_URL}/api/delete-post/${postToDelete.value}`, { withCredentials: true })
+    const res = await axios.delete(`${API_BASE_URL}/api/delete-post/${postToDelete.value}`, authHeaders)
     posts.value = posts.value.filter(p => p._id !== postToDelete.value)
     hideDeleteModal()
     console.log('[Dashboard] Post deleted successfully')
@@ -152,6 +160,7 @@ const confirmDeletePost = async () => {
 
 onMounted(fetchDashboardData)
 </script>
+
 
 
 <style scoped>

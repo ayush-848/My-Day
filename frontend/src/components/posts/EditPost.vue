@@ -68,9 +68,12 @@ const fetchPost = async () => {
 
 const updatePost = async () => {
   try {
+    const token = localStorage.getItem('token')
+
     const res = await axios.put(`${API_BASE_URL}/api/edit-post/${postId}`, form.value, {
-      withCredentials: true
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
+
     showStatusMessage(res.data.type || 'success', res.data.message || 'Post updated successfully.')
     router.push('/dashboard')
   } catch (error) {
@@ -81,9 +84,12 @@ const updatePost = async () => {
 
 const deletePost = async () => {
   try {
+    const token = localStorage.getItem('token')
+
     const res = await axios.delete(`${API_BASE_URL}/api/delete-post/${postId}`, {
-      withCredentials: true
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
+
     showStatusMessage(res.data.type || 'success', res.data.message || 'Post deleted.')
     router.push('/dashboard')
   } catch (error) {
@@ -94,6 +100,7 @@ const deletePost = async () => {
 
 onMounted(fetchPost)
 </script>
+
 
 
 <style scoped>

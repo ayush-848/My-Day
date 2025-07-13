@@ -1,7 +1,5 @@
-// server/routes/api.js
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const Post = require('../models/Post');
 const User = require('../models/User');
@@ -9,6 +7,7 @@ const Changelog = require('../models/Changelog');
 const Subscriber = require('../models/Subscriber');
 const { sendNewsletter } = require('../../utils/mailer');
 const sendContactFormEmail = require('../../utils/contactMail');
+
 const jwtSecret = process.env.JWT_SECRET;
 
 // ==================== Middleware ====================
@@ -24,41 +23,18 @@ async function findDemoUserId() {
 }
 findDemoUserId();
 
-const attachUserForApi = (req, res, next) => {
-  const token = req.cookies.token;
-  if (token) {
-    jwt.verify(token, jwtSecret, async (err, decodedToken) => {
-      if (err) {
-        req.username = null;
-        req.userExists = false;
-      } else {
-        try {
-          const user = await User.findById(decodedToken.userId);
-          if (user) {
-            req.userId = decodedToken.userId;
-            req.username = user.username;
-            req.userExists = true;
-          } else {
-            req.username = null;
-            req.userExists = false;
-          }
-        } catch (dbError) {
-          console.error('User fetch error:', dbError);
-          req.username = null;
-          req.userExists = false;
-        }
-      }
-      next();
-    });
-  } else {
-    req.username = null;
-    req.userExists = false;
-    next();
+// 🟡 Replace cookie-based auth with header-based token extraction
+function extractToken(req) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.split(' ')[1];
   }
-};
+  return null;
+}
 
+// 🟢 Auth middleware
 const authMiddleware = async (req, res, next) => {
-  const token = req.cookies.token;
+  const token = extractToken(req);
   if (!token) return res.status(401).json({ type: 'error', message: 'Unauthorized' });
 
   try {
@@ -69,20 +45,19 @@ const authMiddleware = async (req, res, next) => {
     req.user = user;
     next();
   } catch {
-    res.status(401).json({ type: 'error', message: 'Invalid token' });
+    return res.status(401).json({ type: 'error', message: 'Invalid token' });
   }
 };
 
-// ==================== Public API Routes ====================
+// ==================== PUBLIC ROUTES ====================
 
-// server/routes/api.js
+// ✅ Get posts (user posts if logged in, demo otherwise)
 router.get('/posts', async (req, res) => {
-  const token = req.cookies.token;
+  const token = extractToken(req);
   let userId = null;
   let username = null;
   let userExists = false;
 
-  // Check if logged in
   if (token) {
     try {
       const decoded = jwt.verify(token, jwtSecret);
@@ -97,32 +72,25 @@ router.get('/posts', async (req, res) => {
     }
   }
 
-  // If not logged in, fallback to demo user
   if (!userExists) {
     try {
       const demoUser = await User.findOne({ username: 'demoID' });
-      if (demoUser) {
-        userId = demoUser._id;
-        username = null; // No greeting for guest
-      } else {
-        return res.status(500).json({ type: 'error', message: 'Demo user not found' });
-      }
-    } catch (err) {
-      return res.status(500).json({ type: 'error', message: 'Error fetching demo user' });
+      if (demoUser) userId = demoUser._id;
+      else return res.status(500).json({ type: 'error', message: 'Demo user not found' });
+    } catch {
+      return res.status(500).json({ type: 'error', message: 'Error loading demo user' });
     }
   }
 
   try {
     const perPage = 10;
     const page = parseInt(req.query.page) || 1;
-
-    const query = { user: userId };
-    const posts = await Post.find(query)
+    const posts = await Post.find({ user: userId })
       .sort({ createdAt: -1 })
       .skip(perPage * (page - 1))
       .limit(perPage);
 
-    const count = await Post.countDocuments(query);
+    const count = await Post.countDocuments({ user: userId });
     const hasNextPage = page + 1 <= Math.ceil(count / perPage);
 
     res.json({
@@ -132,23 +100,23 @@ router.get('/posts', async (req, res) => {
       userExists,
     });
   } catch (error) {
-    console.error('[API /posts] Post fetch error:', error);
+    console.error('[API /posts] Fetch error:', error);
     res.status(500).json({ type: 'error', message: 'Could not fetch posts' });
   }
 });
 
-
+// ✅ Single Post
 router.get('/post/:id', async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ type: 'error', message: 'Post not found' });
     res.json(post);
   } catch (error) {
-    console.error('Single post error:', error);
     res.status(500).json({ type: 'error', message: 'Could not fetch post' });
   }
 });
 
+// ✅ Search Posts
 router.post('/search', async (req, res) => {
   try {
     const term = req.body.searchTerm.replace(/[^a-zA-Z0-9]/g, '');
@@ -160,11 +128,11 @@ router.post('/search', async (req, res) => {
     });
     res.json({ searchResults: results });
   } catch (error) {
-    console.error('Search error:', error);
     res.status(500).json({ type: 'error', message: 'Search failed' });
   }
 });
 
+// ✅ About
 router.get('/about', (req, res) => {
   res.json({
     title: 'About MyDay Blog',
@@ -172,6 +140,7 @@ router.get('/about', (req, res) => {
   });
 });
 
+// ✅ Newsletter Subscribe
 router.post('/subscribe', async (req, res) => {
   try {
     const { email } = req.body;
@@ -180,19 +149,17 @@ router.post('/subscribe', async (req, res) => {
     }
 
     const exists = await Subscriber.findOne({ email });
-    if (exists) {
-      return res.status(409).json({ type: 'error', message: 'Already subscribed.' });
-    }
+    if (exists) return res.status(409).json({ type: 'error', message: 'Already subscribed.' });
 
     const newSubscriber = new Subscriber({ email });
     await newSubscriber.save();
     res.status(200).json({ type: 'success', message: 'Subscribed successfully!' });
-  } catch (error) {
-    console.error('Subscribe error:', error);
+  } catch {
     res.status(500).json({ type: 'error', message: 'Subscription failed.' });
   }
 });
 
+// ✅ Newsletter Unsubscribe
 router.get('/unsubscribe', async (req, res) => {
   try {
     const { token } = req.query;
@@ -200,13 +167,12 @@ router.get('/unsubscribe', async (req, res) => {
     if (!subscriber) return res.status(400).send('Invalid or expired unsubscribe link.');
     await Subscriber.deleteOne({ _id: subscriber._id });
     res.status(200).send('<h1>You have successfully unsubscribed.</h1><p>You may close this tab.</p>');
-  } catch (error) {
-    console.error('Unsubscribe error:', error);
+  } catch {
     res.status(500).send('Unsubscription failed.');
   }
 });
 
-// ==================== Authenticated Routes ====================
+// ==================== AUTHENTICATED ROUTES ====================
 
 router.get('/dashboard', authMiddleware, async (req, res) => {
   try {
@@ -246,29 +212,23 @@ router.put('/edit-post/:id', authMiddleware, async (req, res) => {
 
 router.delete('/delete-post/:id', authMiddleware, async (req, res) => {
   try {
-    console.log('[DELETE] Request received to delete post with ID:', req.params.id);
-    console.log('[DELETE] Authenticated user from token:', req.user);
-
     const post = await Post.findOneAndDelete({
       _id: req.params.id,
       user: req.user._id
     });
 
     if (!post) {
-      console.log('[DELETE] Post not found or user not authorized.');
       return res.status(404).json({ type: 'error', message: 'Post not found or unauthorized' });
     }
 
-    console.log('[DELETE] Post deleted successfully:', post._id);
     res.json({ type: 'success', message: 'Post deleted successfully' });
 
   } catch (error) {
-    console.error('[DELETE ERROR]', error);
     res.status(500).json({ type: 'error', message: 'Delete post failed' });
   }
 });
 
-router.post('/send-newsletter', async (req, res) => {
+router.post('/send-newsletter', authMiddleware, async (req, res) => {
   try {
     const { newsletterContent } = req.body;
     const subscribers = await Subscriber.find();
@@ -293,6 +253,7 @@ router.post('/submit-contact', async (req, res) => {
   }
 });
 
+// ✅ Changelog
 router.get('/changelog', async (req, res) => {
   try {
     const changelogs = await Changelog.find().sort({ createdAt: -1 });

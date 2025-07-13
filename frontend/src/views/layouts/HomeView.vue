@@ -8,13 +8,16 @@ const posts = ref([]);
 const nextPage = ref(null);
 const username = ref(null);
 const userExists = ref(false);
-const loading = ref(true); // ✅ Loading flag
+const loading = ref(true);
 
 const fetchPosts = async (page = 1) => {
-  loading.value = true; // ✅ Start loading
+  loading.value = true;
+
   try {
+    const token = localStorage.getItem('token');
+
     const response = await axios.get(`${API_BASE_URL}/api/posts?page=${page}`, {
-      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
 
     posts.value = response.data.posts;
@@ -25,7 +28,7 @@ const fetchPosts = async (page = 1) => {
     console.error('Failed to fetch posts:', error);
     alert('Failed to fetch posts. Please check the backend connection.');
   } finally {
-    loading.value = false; // ✅ Done loading
+    loading.value = false;
   }
 };
 
@@ -38,6 +41,7 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 </script>
+
 
 <template>
   <div class="container">

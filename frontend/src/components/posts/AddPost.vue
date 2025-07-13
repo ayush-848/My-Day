@@ -45,9 +45,12 @@ const form = ref({
 
 const submitPost = async () => {
   try {
+    const token = localStorage.getItem('token')
+
     await axios.post(`${API_BASE_URL}/api/add-post`, form.value, {
-      withCredentials: true
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
+
     alert('Post added successfully.')
     router.push('/dashboard')
   } catch (err) {
@@ -56,6 +59,7 @@ const submitPost = async () => {
   }
 }
 </script>
+
 
 <style scoped>
 .add-post-wrapper {

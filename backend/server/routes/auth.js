@@ -1,4 +1,3 @@
-// server/routes/auth.js
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
@@ -9,13 +8,15 @@ const jwtSecret = process.env.JWT_SECRET;
 
 // Check Auth Status
 router.get('/auth-status', async (req, res) => {
-  const token = req.cookies.token;
+  const authHeader = req.headers.authorization;
   console.log('Checking auth status...');
 
-  if (!token) {
-    console.log('No token found in cookies');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('No token in Authorization header');
     return res.json({ userExists: false });
   }
+
+  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = jwt.verify(token, jwtSecret);
@@ -23,7 +24,7 @@ router.get('/auth-status', async (req, res) => {
 
     const user = await User.findById(decoded.userId);
     if (!user) {
-      console.log('User not found in DB');
+      console.log('User not found');
       return res.json({ userExists: false });
     }
 
@@ -53,8 +54,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ userId: user._id }, jwtSecret);
-    res.cookie('token', token, { httpOnly: true });
+    const token = jwt.sign({ userId: user._id }, jwtSecret, { expiresIn: '1h' });
 
     console.log(`Login successful for user: ${username}`);
     res.json({ message: 'Login successful', token, username: user.username });
@@ -88,10 +88,10 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Logout Route
+// Logout Route (optional with localStorage)
 router.post('/logout', (req, res) => {
   console.log('Logout requested');
-  res.clearCookie('token');
+  // Nothing to clear on backend; just respond.
   res.json({ message: 'Logged out successfully' });
 });
 

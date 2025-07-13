@@ -9,33 +9,25 @@
         <li><router-link to="/contact">Contact</router-link></li>
       </ul>
     </nav>
-
-    <div v-if="$route.path !== '/admin'" class="header_button">
-      <button>
-        <router-link to="/logout" class="button">Logout</router-link>
-      </button>
-    </div>
   </header>
 
   <h3>Sign In</h3>
-
   <form @submit.prevent="handleLogin">
-    <label for="username"><b>Username</b></label>
+    <label><b>Username</b></label>
     <input type="text" v-model="loginUsername" placeholder="Enter Username" required />
 
-    <label for="password"><b>Password</b></label>
+    <label><b>Password</b></label>
     <input type="password" v-model="loginPassword" placeholder="Enter Password" required />
 
     <input type="submit" class="btn" value="Submit" />
   </form>
 
   <h3>Register</h3>
-
   <form @submit.prevent="handleRegister">
-    <label for="username"><b>Username</b></label>
+    <label><b>Username</b></label>
     <input type="text" v-model="registerUsername" placeholder="Enter Username" required />
 
-    <label for="password"><b>Password</b></label>
+    <label><b>Password</b></label>
     <input type="password" v-model="registerPassword" placeholder="Enter Password" required />
 
     <input type="submit" class="btn" value="Register" />

@@ -13,9 +13,12 @@ const fetchPost = async () => {
   if (!postId) return
 
   try {
+    const token = localStorage.getItem('token')
+
     const response = await axios.get(`${API_BASE_URL}/api/post/${postId}`, {
-      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
+
     post.value = response.data
   } catch (error) {
     console.error('Failed to fetch post:', error)
@@ -26,6 +29,7 @@ const fetchPost = async () => {
 const goBack = () => router.back()
 onMounted(fetchPost)
 </script>
+
 
 <template>
   <div class="post-container">
