@@ -8,6 +8,7 @@ import Dashboard from '../components/Dashboard.vue';
 import EditPost from '../components/posts/EditPost.vue';
 import AddPost from '../components/posts/AddPost.vue';
 import Changelog from '../components/Changelog.vue';
+import Search from '../components/Search.vue';
 
 const routes = [
   { path: '/', name: 'home', component: HomeView },
@@ -18,6 +19,7 @@ const routes = [
   { path: '/changelog', name: 'changelog', component: Changelog },
   { path: '/contact', name: 'contact', component: Contact },
   { path: '/admin', name: 'login', component: Login },
+  { path: '/search', name: 'search', component: Search },
   { path: '/dashboard', name: 'dashboard', component: Dashboard, meta: { requiresAuth: true } }
 ];
 
