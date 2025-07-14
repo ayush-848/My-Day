@@ -20,7 +20,7 @@
         </li>
         <li class="footer__nav-item">
           <a
-            href="https://github.com/ayush-848/MyDay"
+            href="https://github.com/ayush-848"
             target="_blank"
             rel="noopener noreferrer"
             class="footer__nav-link"
