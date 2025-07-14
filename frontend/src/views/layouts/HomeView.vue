@@ -9,9 +9,11 @@ const nextPage = ref(null);
 const username = ref(null);
 const userExists = ref(false);
 const loading = ref(true);
+const currentPage = ref(1); // 🆕 Track the current page
 
 const fetchPosts = async (page = 1) => {
   loading.value = true;
+  currentPage.value = page;
 
   try {
     const token = localStorage.getItem('token');
@@ -42,7 +44,6 @@ const formatDate = (dateString) => {
 };
 </script>
 
-
 <template>
   <div class="container">
     <!-- Welcome Section -->
@@ -68,12 +69,10 @@ const formatDate = (dateString) => {
         {{ userExists ? 'Your Posts:' : 'Latest Posts:' }}
       </h2>
 
-      <!-- ✅ Show loading message -->
       <div v-if="loading">
         <p>Loading your posts...</p>
       </div>
 
-      <!-- ✅ Posts list after loading -->
       <div v-else-if="posts.length > 0" class="post-list">
         <ul class="article-ul">
           <li v-for="post in posts" :key="post._id">
@@ -85,14 +84,16 @@ const formatDate = (dateString) => {
         </ul>
       </div>
 
-      <!-- ✅ No posts found -->
       <div v-else>
         <p>No posts found.</p>
       </div>
 
       <!-- Pagination -->
-      <div v-if="nextPage && !loading" class="pagination-controls">
-        <a href="#" @click.prevent="fetchPosts(nextPage)" class="pagination">
+      <div v-if="!loading" class="pagination-controls">
+        <a href="#" v-if="currentPage > 1" @click.prevent="fetchPosts(currentPage - 1)" class="pagination">
+          ← View Newer Posts
+        </a>
+        <a href="#" v-if="nextPage" @click.prevent="fetchPosts(nextPage)" class="pagination">
           View Older Posts →
         </a>
       </div>
@@ -105,5 +106,6 @@ const formatDate = (dateString) => {
   display: flex;
   justify-content: center;
   margin-top: 2rem;
+  gap: 1rem;
 }
 </style>
